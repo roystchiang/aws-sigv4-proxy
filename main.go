@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"net/http"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/awslabs/aws-sigv4-proxy/handler"
@@ -31,11 +32,14 @@ func main() {
 	log.WithFields(log.Fields{"StripHeaders": *strip}).Infof("Stripping headers %s", *strip)
 	log.WithFields(log.Fields{"port": *port}).Infof("Listening on %s", *port)
 
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	log.Fatal(
 		http.ListenAndServe(*port, &handler.Handler{
 			ProxyClient: &handler.ProxyClient{
 				Signer: signer,
-				Client: http.DefaultClient,
+				Client: &http.Client{Transport: tr},
 				StripRequestHeaders: *strip,
 				SigningNameOverride: *signingNameOverride,
 				HostOverride: *hostOverride,
